@@ -2067,62 +2067,71 @@ function saveState(){
 
     
     // ---------------- Auth (login/logout) ----------------
-    function showLogin(show){
-      const back = document.getElementById("loginBack");
-      if(!back) return;
-      back.style.display = show ? "flex" : "none";
-      if(show){
-        const err = document.getElementById("loginErr");
-        if(err) err.style.display = "none";
-        const u = document.getElementById("loginUser");
-        if(u) u.focus();
-      }
+  function showLogin(show){
+    const back = document.getElementById("loginBack");
+    if(!back) return;
+    back.style.display = show ? "flex" : "none";
+    if(show){
+      const err = document.getElementById("loginErr");
+      if(err) err.style.display = "none";
+      const u = document.getElementById("loginUser");
+      if(u) u.focus();
     }
+  }
 
-    async function doLogin(){
-      const u = (document.getElementById("loginUser")?.value || "").trim();
-      const p = (document.getElementById("loginPass")?.value || "").trim();
-      try{
-        const res = await fetch("/login", {
-  method:"POST",
-  credentials: "same-origin",
-  headers: {"Content-Type":"application/json"},
-  body: JSON.stringify({username:u, password:p})
-});
-        if(!res.ok) throw new Error("bad");
-        showLogin(false);
-        await applyLoginContext();
-        refresh();
-        toast("Влязъл/влязла.");
-      }catch(e){
-        const err = document.getElementById("loginErr");
-        if(err) err.style.display = "block";
-      }
+  async function doLogin(){
+    const u = (document.getElementById("loginUser")?.value || "").trim();
+    const p = (document.getElementById("loginPass")?.value || "").trim();
+
+    try{
+      const res = await fetch("/login", {
+        method:"POST",
+        credentials: "same-origin",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({username:u, password:p})
+      });
+      if(!res.ok) throw new Error("bad");
+
+      showLogin(false);
+      await applyLoginContext();
+      refresh();
+      setTab("demo");
+      toast("Влязъл/влязла.");
+    }catch(e){
+      const err = document.getElementById("loginErr");
+      if(err) err.style.display = "block";
     }
-    
-    window.addEventListener("DOMContentLoaded", () => {
+  }
+
+  async function doLogout(){
+    try{
+      await fetch("/logout", {
+        method:"POST",
+        credentials: "same-origin",
+        headers: {"Content-Type":"application/json"},
+        body:"{}"
+      });
+    }catch(e){}
+    toast("Изход.");
+    location.reload();
+  }
+
+  // ---------------- Start (bind events AFTER DOM is ready) ----------------
+  window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btnDoLogin")?.addEventListener("click", doLogin);
     document.getElementById("loginPass")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 
-    document.getElementById("btnLogout")?.addEventListener("click", async ()=>{
-  try{ 
-    await fetch("/logout", {
-      method:"POST",
-      credentials: "same-origin",
-      headers:{"Content-Type":"application/json"},
-      body:"{}"
-    }); 
-  }catch(e){}
-  location.reload();
-});
-      toast("Изход.");
-      // reload to clear UI context; will show login modal again
-      location.reload();
-    });
-    });
+    document.getElementById("btnLogout")?.addEventListener("click", doLogout);
 
-// ---------------- Start ----------------
-    (async ()=>{ const ok = await applyLoginContext(); if(!ok){ showLogin(true); return; } refresh(); setTab("demo"); })();
+    // initial load
+    const ok = await applyLoginContext();
+    if(!ok){
+      showLogin(true);
+      return;
+    }
+    refresh();
+    setTab("demo");
+  });
   </script>
 </body>
 </html>
