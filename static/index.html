@@ -2099,7 +2099,8 @@ function saveState(){
         if(err) err.style.display = "block";
       }
     }
-
+    
+    window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnDoLogin")?.addEventListener("click", doLogin);
     document.getElementById("loginPass")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 
@@ -2117,6 +2118,7 @@ function saveState(){
       toast("Изход.");
       // reload to clear UI context; will show login modal again
       location.reload();
+    });
     });
 
 // ---------------- Start ----------------
