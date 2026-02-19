@@ -901,12 +901,12 @@ function saveState(){
     const norm = (s)=> (s||"").toString().trim().toLowerCase();
 
     // UUID helper (works even if crypto.randomUUID is missing)
-    const uuid = ()=> {
-      try{
-        if(globalThis.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
-      }catch{}
-      return "id-" + Date.now().toString(16) + "-" + Math.random().toString(16).slice(2);
-    };
+    function uuid(){
+  try{
+    if(globalThis.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  }catch(e){}
+  return "id-" + Date.now().toString(16) + "-" + Math.random().toString(16).slice(2);
+}
 
     function escapeHtml(s){
       return (s||"").toString()
