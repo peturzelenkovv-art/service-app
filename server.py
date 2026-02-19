@@ -238,7 +238,7 @@ def login():
     record_fail(key)
     return jsonify({"status": "fail"}), 401
 
-@app.route("/logout", methods=["POST"])
+@app.route("/logout", methods=["POST", "GET"])
 def logout():
     session.clear()
     return jsonify({"status": "ok"})
