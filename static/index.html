@@ -2084,10 +2084,11 @@ function saveState(){
       const p = (document.getElementById("loginPass")?.value || "").trim();
       try{
         const res = await fetch("/login", {
-          method:"POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({username:u, password:p})
-        });
+  method:"POST",
+  credentials: "same-origin",
+  headers: {"Content-Type":"application/json"},
+  body: JSON.stringify({username:u, password:p})
+});
         if(!res.ok) throw new Error("bad");
         showLogin(false);
         await applyLoginContext();
@@ -2103,7 +2104,16 @@ function saveState(){
     document.getElementById("loginPass")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 
     document.getElementById("btnLogout")?.addEventListener("click", async ()=>{
-      try{ await fetch("/logout", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"}); }catch(e){}
+  try{ 
+    await fetch("/logout", {
+      method:"POST",
+      credentials: "same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:"{}"
+    }); 
+  }catch(e){}
+  location.reload();
+});
       toast("Изход.");
       // reload to clear UI context; will show login modal again
       location.reload();
