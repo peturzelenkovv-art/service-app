@@ -1,0 +1,2116 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Service Manager</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#e7eefc;
+      --muted:#9fb1d6;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+
+      --good:#30d158;
+      --warn:#ffd60a;
+      --bad:#ff453a;
+      --accent:#5b8cff;
+
+      --panel1: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.02);
+
+      --selectBg: rgba(10,16,30,.92);
+      --optionBg: #0f1930;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background: radial-gradient(1000px 600px at 20% 0%, rgba(91,140,255,.25), transparent 60%),
+                  radial-gradient(1000px 600px at 80% 10%, rgba(48,209,88,.18), transparent 55%),
+                  var(--bg);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    .container{max-width:1700px;margin:0 auto;padding:18px}
+    header{
+      display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
+      padding:16px;border:1px solid var(--border);border-radius:var(--radius);
+      background: linear-gradient(180deg, var(--panel1), var(--panel2));
+      box-shadow:var(--shadow);
+    }
+    .title{display:flex;flex-direction:column;gap:6px;min-width:320px}
+    .title h1{font-size:18px;margin:0}
+    .title p{margin:0;color:var(--muted);font-size:13px}
+
+    .right{display:flex;flex-direction:column;gap:10px;align-items:flex-end;flex:1}
+    .nav{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .nav .btn{padding:9px 12px}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;border-radius:12px;
+      cursor:pointer; user-select:none;
+      transition:.15s transform, .15s background;
+      font-weight:800; font-size:13px;
+      white-space:nowrap;
+    }
+    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+    .btn.primary{background:rgba(91,140,255,.25);border-color:rgba(91,140,255,.45)}
+    .btn.danger{background:rgba(255,69,58,.18);border-color:rgba(255,69,58,.35)}
+    .btn.ok{background:rgba(48,209,88,.15);border-color:rgba(48,209,88,.35)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+    .pill{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--border); color:var(--muted); font-size:12px;
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+    .grid1{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+    .gridSplit{display:grid;grid-template-columns: 1.15fr .85fr;gap:14px;margin-top:14px}
+
+    @media (max-width: 1100px){
+      header{flex-direction:column;align-items:stretch}
+      .right{align-items:flex-start}
+      .row,.nav{justify-content:flex-start}
+      .grid2,.gridSplit{grid-template-columns:1fr}
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--panel1), var(--panel2));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      min-height:auto; /* ✅ по-стегнато */
+    }
+    .cardHead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px 12px;border-bottom:1px solid var(--border);
+    }
+    .cardHead h2{margin:0;font-size:14px}
+    .cardBody{padding:12px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+
+    .input, select, textarea{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      padding:10px 12px;border-radius:12px;
+      outline:none;
+      min-width: 240px;
+      max-width: 100%;
+      font-size: 13px;
+    }
+    .input::placeholder, textarea::placeholder{color:rgba(231,238,252,.55)}
+
+    /* ✅ По-четими падащи менюта */
+    select{
+      background: var(--selectBg);
+      color: var(--text);
+    }
+    option{
+      background: var(--optionBg);
+      color: var(--text);
+    }
+
+    .tableWrap{
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      overflow:auto;
+      max-height: 64vh;
+      background: rgba(0,0,0,.10);
+    }
+    table{width:100%;border-collapse:collapse;min-width: 1180px}
+    th,td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font-size:13px;vertical-align:top}
+    th{
+      color:var(--muted);font-weight:900;font-size:12px;white-space:nowrap;
+      position: sticky; top: 0;
+      background: rgba(10,16,30,.92);
+      backdrop-filter: blur(8px);
+      z-index:2;
+    }
+    tr:hover td{background:rgba(255,255,255,.03)}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+    .tag{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;border:1px solid var(--border);
+      font-size:12px;color:var(--text); background:rgba(255,255,255,.04)
+    }
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.good{background:#30d158}
+    .dot.warn{background:#ffd60a}
+    .dot.bad{background:#ff453a}
+
+    .muted{color:var(--muted)}
+    .empty{
+      padding:18px;border:1px dashed rgba(255,255,255,.18);
+      border-radius:14px;color:var(--muted);text-align:center;background:rgba(255,255,255,.03)
+    }
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:14px;border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);font-size:12px;
+    }
+
+    .modalBack{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);
+      display:none;align-items:center;justify-content:center;padding:16px;
+      z-index:50;
+    }
+    .modal{
+      width:min(980px, 100%);
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(17,27,46,.98), rgba(15,25,48,.98));
+      border-radius:18px; box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .modalHead{padding:12px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .modalHead h3{margin:0;font-size:14px}
+    .modalBody{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .modalBody label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+    .modalBody .full{grid-column:1 / -1}
+    .modalFoot{padding:12px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:rgba(15,25,48,.95);border:1px solid var(--border);
+      padding:10px 12px;border-radius:12px;box-shadow:var(--shadow);
+      display:none;font-size:13px;color:var(--text);
+      z-index:60;
+    }
+
+    .twoCols{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    @media (max-width: 900px){ .twoCols{grid-template-columns:1fr} }
+    .mini{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <h1>Service Manager</h1>
+        <p>Инсталирани (база) • Демо • Сервиз • Профилактики • Резервни • Консумативи • Наличност техник</p>
+      </div>
+
+      <div class="right">
+        <div class="nav">
+          <button class="btn primary" data-tab="demo">Демо машини</button>
+          <button class="btn" data-tab="clients">Инсталирани машини</button>
+          <button class="btn" data-tab="service">Сервиз</button>
+          <button class="btn" data-tab="pm">Профилактики</button>
+          <button class="btn" data-tab="parts">Резервни части</button>
+          <button class="btn" data-tab="cons">Консумативи</button>
+          <button class="btn" data-tab="techinv">Наличност техник</button>
+          <button class="btn" data-tab="settings">Настройки</button>
+        </div>
+
+        <div class="row">
+          <span class="pill" id="statsPill">—</span>
+          <span class="pill" id="whoPill">—</span>
+          <button class="btn" id="btnExport">Export backup</button>
+          <label class="btn" style="display:inline-flex;align-items:center;gap:8px;">
+            Import backup
+            <input id="fileImport" type="file" accept="application/json" style="display:none">
+          </label>
+          <button class="btn danger" id="btnReset">Изчисти всичко</button>
+          <button class="btn" id="btnLogout">Изход</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- TAB: DEMO (оставям го както беше) -->
+    <section id="tab_demo" class="grid1">
+      <section class="card">
+        <div class="cardHead">
+          <h2>Демо машини</h2>
+          <div class="actions">
+            <button class="btn primary" id="btnAddDemoMachine">+ Добави демо машина</button>
+            <button class="btn ok" id="btnGiveDemo">+ Дай при клиент</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qDemo" placeholder="Търси (вид, сер.№, апликатор, статус)..." />
+            <span class="pill" id="demoCount">0</span>
+          </div>
+          <div id="demoEmpty" class="empty" style="display:none">Няма демо машини.</div>
+          <div class="tableWrap">
+            <table id="demoTable" style="min-width: 1400px">
+              <thead>
+                <tr>
+                  <th>Вид машина</th>
+                  <th>Сер.№ машина</th>
+                  <th>Сер.№ апликатор</th>
+                  <th>Статус</th>
+                  <th>При клиент</th>
+                  <th style="width:280px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="toolbar" style="margin-top:12px">
+            <input class="input" id="qDemoLoans" placeholder="История (клиент, сер.№, дата)..." />
+            <span class="pill" id="demoLoansCount">0</span>
+          </div>
+          <div id="demoLoansEmpty" class="empty" style="display:none">Няма история на демо предоставяния.</div>
+          <div class="tableWrap">
+            <table id="demoLoansTable" style="min-width: 1500px">
+              <thead>
+                <tr>
+                  <th>Дадена</th>
+                  <th>Върната</th>
+                  <th>Клиент</th>
+                  <th>Телефон</th>
+                  <th>Адрес</th>
+                  <th>Вид машина</th>
+                  <th>Сер.№ машина</th>
+                  <th>Сер.№ апликатор</th>
+                  <th>Бележка</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:10px" class="badge">
+            <span>✅</span>
+            <span>Демо е отделно от “Инсталирани машини” (базата).</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- TAB: INSTALLED BASE -->
+    <section id="tab_clients" class="grid1" style="display:none">
+      <section class="card">
+        <div class="cardHead">
+          <h2>Инсталирани машини (БАЗА)</h2>
+          <div class="actions">
+            <button class="btn" id="btnAddClient">+ Добави клиент</button>
+            <button class="btn primary" id="btnAddInstalled">+ Добави инсталирана машина</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qInstalled" placeholder="Филтър (клиент, телефон, адрес, сер.№, вид)..." />
+            <span class="pill" id="installedCount">0</span>
+          </div>
+          <div id="installedEmpty" class="empty" style="display:none">Няма записи. Добави клиент + инсталирана машина.</div>
+          <div class="tableWrap">
+            <table id="installedTable" style="min-width: 1550px">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Клиент</th>
+                  <th>Телефон</th>
+                  <th>Адрес</th>
+                  <th>Вид машина</th>
+                  <th>Сер.№ машина</th>
+                  <th>Сер.№ апликатор</th>
+                  <th>Описание</th>
+                  <th style="width:220px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px" class="badge">
+            <span>ℹ️</span>
+            <span>Сервиз / Профилактики / Консумативи използват избор от тази база.</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- TAB: SERVICE -->
+    <section id="tab_service" class="grid1" style="display:none">
+      <section class="card">
+        <div class="cardHead">
+          <h2>Сервиз</h2>
+          <div class="actions">
+            <button class="btn primary" id="btnAddService">+ Нов ремонт</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qService" placeholder="Търси (клиент, сер.№, описание, части)..." />
+            <span class="pill" id="serviceCount">0</span>
+          </div>
+          <div id="serviceEmpty" class="empty" style="display:none">Няма сервизни записи.</div>
+          <div class="tableWrap">
+            <table id="serviceTable" style="min-width: 1600px">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Клиент</th>
+                  <th>Телефон</th>
+                  <th>Адрес</th>
+                  <th>Вид машина</th>
+                  <th>Сер.№ машина</th>
+                  <th>Сер.№ апликатор</th>
+                  <th>Описание / ремонт</th>
+                  <th>Вложени части</th>
+                  <th>Техник</th>
+                  <th style="width:220px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:10px" class="badge">
+            <span>⚙️</span>
+            <span>Вложените части се взимат от “Наличност техник”, не директно от склада.</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- TAB: PM -->
+    <section id="tab_pm" class="grid1" style="display:none">
+      <section class="card">
+        <div class="cardHead">
+          <h2>Профилактики (за всички инсталирани машини)</h2>
+          <div class="actions">
+            <button class="btn primary" id="btnMarkPM">+ Отбележи профилактика</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qPM" placeholder="Търси (клиент, сер.№, статус)..." />
+            <span class="pill" id="pmCount">0</span>
+          </div>
+          <div id="pmEmpty" class="empty" style="display:none">Няма инсталирани машини.</div>
+          <div class="tableWrap">
+            <table id="pmTable" style="min-width: 1500px">
+              <thead>
+                <tr>
+                  <th>Клиент</th>
+                  <th>Телефон</th>
+                  <th>Адрес</th>
+                  <th>Вид машина</th>
+                  <th>Сер.№ машина</th>
+                  <th>Последна профилактика</th>
+                  <th>Следваща (1 г.)</th>
+                  <th>Статус</th>
+                  <th style="width:280px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px" class="badge">
+            <span>⏰</span>
+            <span>“Чака профилактика” ако няма дата или е минала следващата дата.</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- TAB: PARTS (✅ вече е вертикално + заявки горе, склад долу) -->
+    <section id="tab_parts" class="grid1" style="display:none">
+
+      <!-- Заявки ГОРЕ -->
+      <section class="card">
+        <div class="cardHead">
+          <h2>Заявки за части (към админ)</h2>
+          <div class="actions">
+            <button class="btn ok" id="btnNewPartReq">+ Нова заявка</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qPartReq" placeholder="Търси (част, статус, техник)..." />
+            <span class="pill" id="partReqCount">0</span>
+          </div>
+          <div id="partReqEmpty" class="empty" style="display:none">Няма заявки.</div>
+          <div class="tableWrap">
+            <table id="partReqTable" style="min-width: 1400px">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Част</th>
+                  <th>Кол.</th>
+                  <th>Статус</th>
+                  <th>Техник</th>
+                  <th>Бележка</th>
+                  <th style="width:280px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px" class="badge">
+            <span>🔐</span>
+            <span>Одобрение/Отказ се виждат само при роля “Админ”.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Склад ДОЛУ -->
+      <section class="card">
+        <div class="cardHead">
+          <h2>Резервни части (склад)</h2>
+          <div class="actions">
+            <button class="btn primary" id="btnAddPart">+ Добави част</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qParts" placeholder="Търси (артикул №, име)..." />
+            <span class="pill" id="partsCount">0</span>
+          </div>
+          <div id="partsEmpty" class="empty" style="display:none">Няма части.</div>
+          <div class="tableWrap">
+            <table id="partsTable" style="min-width: 1100px">
+              <thead>
+                <tr>
+                  <th>Артикул №</th>
+                  <th>Име</th>
+                  <th>Наличност (склад)</th>
+                  <th style="width:240px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="mini" style="margin-top:10px">
+            Одобрена заявка = прехвърляне от склад → към наличност на техника.
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- TAB: CONSUMABLES (✅ вече е вертикално + история горе, склад долу) -->
+    <section id="tab_cons" class="grid1" style="display:none">
+
+      <!-- История ГОРЕ -->
+      <section class="card">
+        <div class="cardHead">
+          <h2>Изписване към клиенти (история)</h2>
+          <div class="actions">
+            <button class="btn ok" id="btnIssueCons">+ Изпиши към клиент</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qConsHist" placeholder="Търси (клиент, консуматив)..." />
+            <span class="pill" id="consHistCount">0</span>
+          </div>
+          <div id="consHistEmpty" class="empty" style="display:none">Няма изписвания.</div>
+          <div class="tableWrap">
+            <table id="consHistTable" style="min-width: 1250px">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Клиент</th>
+                  <th>Телефон</th>
+                  <th>Адрес</th>
+                  <th>Артикул</th>
+                  <th>Кол.</th>
+                  <th style="width:220px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="mini" style="margin-top:10px">При изписване наличността се намалява автоматично.</div>
+        </div>
+      </section>
+
+      <!-- Склад ДОЛУ -->
+      <section class="card">
+        <div class="cardHead">
+          <h2>Консумативи (склад)</h2>
+          <div class="actions">
+            <button class="btn primary" id="btnAddCons">+ Добави консуматив</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qCons" placeholder="Търси (име)..." />
+            <span class="pill" id="consCount">0</span>
+          </div>
+          <div id="consEmpty" class="empty" style="display:none">Няма консумативи.</div>
+          <div class="tableWrap">
+            <table id="consTable" style="min-width: 900px">
+              <thead>
+                <tr>
+                  <th>Име на артикул</th>
+                  <th>Наличност</th>
+                  <th style="width:240px">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="mini" style="margin-top:10px">Тук управляваш складовата наличност.</div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- TAB: TECH INVENTORY (✅ вертикално) -->
+    <section id="tab_techinv" class="grid1" style="display:none">
+
+      <!-- Моята наличност ГОРЕ -->
+      <section class="card">
+        <div class="cardHead">
+          <h2>Моята наличност (техник)</h2>
+          <div class="actions">
+            <button class="btn ok" id="btnRequestFromStock">+ Заяви от склад</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qMyInv" placeholder="Търси (артикул №, име)..." />
+            <span class="pill" id="myInvCount">0</span>
+          </div>
+          <div id="myInvEmpty" class="empty" style="display:none">Нямаш наличност. Пусни заявка към админ.</div>
+          <div class="tableWrap">
+            <table id="myInvTable" style="min-width: 1100px">
+              <thead>
+                <tr>
+                  <th>Артикул №</th>
+                  <th>Име</th>
+                  <th>Наличност при мен</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:10px" class="badge">
+            <span>ℹ️</span>
+            <span>При ремонт в “Сервиз” вложените части се взимат от тук.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Админ изглед ДОЛУ -->
+      <section class="card">
+        <div class="cardHead">
+          <h2>Наличност по техници (само админ)</h2>
+          <div class="actions">
+            <select id="adminTechPick" style="min-width:220px"></select>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="toolbar">
+            <input class="input" id="qAdminInv" placeholder="Търси (артикул №, име)..." />
+            <span class="pill" id="adminInvCount">0</span>
+          </div>
+          <div id="adminInvEmpty" class="empty" style="display:none">Няма данни.</div>
+          <div class="tableWrap">
+            <table id="adminInvTable" style="min-width: 1100px">
+              <thead>
+                <tr>
+                  <th>Артикул №</th>
+                  <th>Име</th>
+                  <th>Наличност при техника</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:10px" class="badge">
+            <span>🔐</span>
+            <span>Ако не си админ, тази секция е без данни.</span>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- TAB: SETTINGS -->
+    <section id="tab_settings" class="grid1" style="display:none">
+      <section class="card">
+        <div class="cardHead"><h2>Настройки</h2></div>
+        <div class="cardBody">
+          <div class="twoCols">
+            <div class="badge">
+              <span>👤</span>
+              <span>Роля:</span>
+              <select id="roleSelect" style="min-width:160px">
+                <option value="tech">Техник</option>
+                <option value="admin">Админ</option>
+              </select>
+            </div>
+
+            <div class="badge">
+              <span>🧑‍🔧</span>
+              <span>Текущ техник:</span>
+              <select id="currentTechSelect" style="min-width:220px"></select>
+            </div>
+          </div>
+
+          <div class="twoCols" style="margin-top:12px">
+            <div class="badge" style="gap:10px;align-items:stretch">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <span>➕ Добави техник (само админ)</span>
+                <input id="newTechName" class="input" placeholder="пример: Георги" style="min-width:260px" />
+              </div>
+              <button class="btn ok" id="btnAddTech">Добави</button>
+            </div>
+
+            <div class="badge">
+              <span>💾</span>
+              <span>Засега данните са в браузъра. После: реални профили + база + бекъпи.</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </section>
+
+  </div>
+
+  <!-- Modal -->
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+      <div class="modalHead">
+        <h3 id="modalTitle">Заглавие</h3>
+        <button class="btn" id="btnClose">Затвори</button>
+      </div>
+      <div class="modalBody" id="modalBody"></div>
+      <div class="modalFoot">
+        <button class="btn" id="btnCancel">Отказ</button>
+        <button class="btn primary" id="btnSave">Запази</button>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- Login Modal -->
+  <div class="modalBack" id="loginBack">
+    <div class="modal">
+      <div class="modalHead">
+        <h3>Вход</h3>
+        <span class="pill" id="loginHint">Въведи потребител и парола</span>
+      </div>
+      <div class="modalBody">
+        <label>Потребител
+          <input class="input" id="loginUser" placeholder="admin" />
+        </label>
+        <label>Парола
+          <input class="input" id="loginPass" type="password" placeholder="••••••" />
+        </label>
+        <div class="mini" id="loginErr" style="color:rgba(255,69,58,.95);display:none">Грешни данни.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn primary" id="btnDoLogin">Вход</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---------------- Tabs ----------------
+    function setTab(tab){
+      const ids = ["demo","clients","service","pm","parts","cons","techinv","settings"];
+      for(const t of ids){
+        const el = document.getElementById("tab_"+t);
+        if(el) el.style.display = (t===tab) ? "" : "none";
+      }
+      document.querySelectorAll("button[data-tab]").forEach(b=>{
+        b.classList.toggle("primary", b.dataset.tab === tab);
+      });
+    }
+    document.addEventListener("click", (e)=>{
+      const b = e.target.closest("button[data-tab]");
+      if(!b) return;
+      setTab(b.dataset.tab);
+    });
+
+    // ---------------- Storage ----------------
+    const KEY = "service_manager_v3";
+
+    function todayISO(){ return new Date().toISOString().slice(0,10); }
+    function addYears(dateISO, years){
+      const d = new Date(dateISO + "T00:00:00");
+      d.setFullYear(d.getFullYear() + years);
+      return d.toISOString().slice(0,10);
+    }
+    function daysBetween(aISO, bISO){
+      const a = new Date(aISO + "T00:00:00").getTime();
+      const b = new Date(bISO + "T00:00:00").getTime();
+      return Math.round((b - a) / (1000*60*60*24));
+    }
+
+    function seed(){
+      const c1 = { id: uuid(), name:"Иван Петров", phone:"0888 123 456", address:"София, ул. Пример 1" };
+      const c2 = { id: uuid(), name:"Мария Георгиева", phone:"0899 111 222", address:"Пловдив, бул. Център 10" };
+
+      const tech1 = { id: uuid(), name:"Техник 1" };
+      const tech2 = { id: uuid(), name:"Техник 2" };
+
+      const installed1 = { id: uuid(), date:"2026-01-15", clientId:c1.id, machineType:"Лазер X9", machineSerial:"LX9-888", applicatorSerial:"AP-9009", description:"Инсталирана машина" };
+      const installed2 = { id: uuid(), date:"2025-11-20", clientId:c2.id, machineType:"Лазер X7", machineSerial:"LX7-777", applicatorSerial:"AP-7070", description:"Инсталирана машина" };
+
+      const demo1 = { id: uuid(), type:"Демо Лазер X1", machineSerial:"DLX1-001", applicatorSerial:"AP-1001", status:"налична" };
+      const demo2 = { id: uuid(), type:"Демо Лазер X2", machineSerial:"DLX2-014", applicatorSerial:"AP-2044", status:"при клиент" };
+
+      const demoLoans = [
+        { id: uuid(), demoId: demo2.id, clientId: c2.id, giveDate:"2026-02-05", returnDate:"", note:"Демо за 7 дни" }
+      ];
+
+      const parts = [
+        { id: uuid(), sku:"P-100", name:"Платка управление", qty: 3 },
+        { id: uuid(), sku:"P-200", name:"Сензор температура", qty: 8 },
+      ];
+
+      const consumables = [
+        { id: uuid(), name:"Филтър", qty: 15 },
+        { id: uuid(), name:"Маркуч 1м", qty: 40 },
+      ];
+
+      const techInventory = {};
+      techInventory[tech1.id] = { [parts[1].id]: 2 };
+
+      const service = [
+        { id: uuid(), date:"2026-02-07", installedId: installed1.id, description:"Смяна на сензор.", techId: tech1.id, partsUsed:[{ partId: parts[1].id, qty: 1 }] }
+      ];
+      techInventory[tech1.id][parts[1].id] -= 1;
+
+      const pmRecords = [
+        { id: uuid(), installedId: installed1.id, lastDate:"2025-04-10" }
+      ];
+
+      const partRequests = [
+        { id: uuid(), date:"2026-02-08", partId: parts[0].id, qty: 1, status:"чака", techId: tech1.id, note:"за следващ ремонт" }
+      ];
+
+      const consHistory = [
+        { id: uuid(), date:"2026-02-08", installedId: installed2.id, itemId: consumables[0].id, qty: 2 }
+      ];
+      consumables[0].qty -= 2;
+
+      return {
+        role: "tech",
+        techs: [tech1, tech2],
+        currentTechId: tech1.id,
+
+        clients: [c1, c2],
+        installed: [installed1, installed2],
+
+        demoMachines: [demo1, demo2],
+        demoLoans,
+
+        parts,
+        partRequests,
+        techInventory,
+
+        consumables,
+        consHistory,
+
+        service,
+        pmRecords
+      };
+    }
+
+    function loadState(){
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return seed();
+      try{
+        const s = JSON.parse(raw);
+
+        s.role ??= "tech";
+        s.techs ??= [];
+        s.currentTechId ??= (s.techs[0]?.id || "");
+
+        s.clients ??= [];
+        s.installed ??= [];
+        s.demoMachines ??= [];
+        s.demoLoans ??= [];
+
+        s.parts ??= [];
+        s.partRequests ??= [];
+        s.techInventory ??= {};
+
+        s.consumables ??= [];
+        s.consHistory ??= [];
+
+        s.service ??= [];
+        s.pmRecords ??= [];
+
+        for(const t of s.techs){
+          s.techInventory[t.id] ??= {};
+        }
+
+        return s;
+      }catch{
+        return seed();
+      }
+    }
+
+    let state = loadState();
+    
+    // Try to bind current tech to server login (if server provides /me)
+    async function applyLoginContext(){
+      try{
+        const res = await fetch("/me");
+        if(!res.ok) return;
+        const me = await res.json();
+        if(!me || !me.logged_in) return false;
+
+        // map role
+        if(me.role === "admin") state.role = "admin";
+        else state.role = "tech";
+
+        // ensure a tech entry exists for technician users
+        if(me.role !== "admin"){
+          const name = me.display_name || me.username || "Техник";
+          // find tech by name or create
+          let tech = state.techs.find(t => (t.name||"") === name);
+          if(!tech){
+            tech = { id: uuid(), name };
+            state.techs.push(tech);
+          }
+          state.currentTechId = tech.id;
+        }
+        saveState();
+      }catch(e){
+        // ignore if server not available
+      }
+    }
+function saveState(){
+      localStorage.setItem(KEY, JSON.stringify(state));
+      refresh();
+      return true;
+    }
+
+    // ---------------- Helpers ----------------
+    const $ = (id)=>document.getElementById(id);
+    const norm = (s)=> (s||"").toString().trim().toLowerCase();
+
+    // UUID helper (works even if crypto.randomUUID is missing)
+    const uuid = ()=> {
+      try{
+        if(globalThis.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+      }catch{}
+      return "id-" + Date.now().toString(16) + "-" + Math.random().toString(16).slice(2);
+    };
+
+    function escapeHtml(s){
+      return (s||"").toString()
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function toast(msg){
+      const el = $("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=> el.style.display="none", 2200);
+    }
+    function statusTag(status){
+      const s = norm(status);
+      if(s.includes("нал")) return `<span class="tag"><span class="dot good"></span>Налична</span>`;
+      if(s.includes("кли")) return `<span class="tag"><span class="dot warn"></span>При клиент</span>`;
+      return `<span class="tag"><span class="dot warn"></span>${escapeHtml(status||"—")}</span>`;
+    }
+    function badge(cls, label){
+      const dot = cls === "good" ? "good" : (cls === "warn" ? "warn" : "bad");
+      return `<span class="tag"><span class="dot ${dot}"></span>${escapeHtml(label)}</span>`;
+    }
+
+    function getClient(id){ return state.clients.find(c=>c.id===id) || null; }
+    function getInstalled(id){ return state.installed.find(x=>x.id===id) || null; }
+    function getDemo(id){ return state.demoMachines.find(x=>x.id===id) || null; }
+    function activeDemoLoan(demoId){ return state.demoLoans.find(l => l.demoId === demoId && !l.returnDate) || null; }
+
+    function getPart(id){ return state.parts.find(p=>p.id===id) || null; }
+    function getCons(id){ return state.consumables.find(x=>x.id===id) || null; }
+
+    function getTech(id){ return state.techs.find(t=>t.id===id) || null; }
+    function currentTech(){ return getTech(state.currentTechId) || null; }
+    function invMap(techId){
+      state.techInventory[techId] ??= {};
+      return state.techInventory[techId];
+    }
+    function invQty(techId, partId){
+      return Number(invMap(techId)[partId] || 0);
+    }
+    function addInv(techId, partId, qty){
+      const m = invMap(techId);
+      m[partId] = Number(m[partId] || 0) + qty;
+      if(m[partId] <= 0) delete m[partId];
+    }
+
+    // ---------------- Modal ----------------
+    function openModal(title, fields, onSave){
+      $("modalTitle").textContent = title;
+      const body = $("modalBody");
+      body.innerHTML = fields.map(f=>{
+        const full = f.full ? " full" : "";
+        const val = f.value ?? "";
+        if(f.type === "textarea"){
+          return `
+            <label class="${full}">
+              ${escapeHtml(f.label)}
+              <textarea class="input" id="f_${f.key}" rows="4" placeholder="${escapeHtml(f.placeholder||"")}" style="resize:vertical;min-height:90px">${escapeHtml(val)}</textarea>
+            </label>
+          `;
+        }
+        if(f.type === "select"){
+          return `
+            <label class="${full}">
+              ${escapeHtml(f.label)}
+              <select id="f_${f.key}">
+                ${f.options.map(opt=>{
+                  const sel = (opt.value === val) ? "selected" : "";
+                  return `<option value="${escapeHtml(opt.value)}" ${sel}>${escapeHtml(opt.label)}</option>`;
+                }).join("")}
+              </select>
+            </label>
+          `;
+        }
+        return `
+          <label class="${full}">
+            ${escapeHtml(f.label)}
+            <input class="input" id="f_${f.key}" placeholder="${escapeHtml(f.placeholder||"")}" value="${escapeHtml(val)}" />
+          </label>
+        `;
+      }).join("");
+
+      $("modalBack").style.display = "flex";
+      $("btnSave").onclick = ()=>{
+        const data = {};
+        for(const f of fields){
+          const el = document.getElementById("f_"+f.key);
+          data[f.key] = (el?.value ?? "").trim();
+        }
+        onSave(data);
+        closeModal();
+      };
+    }
+    function closeModal(){
+      $("modalBack").style.display = "none";
+      $("modalBody").innerHTML = "";
+    }
+    $("btnClose").onclick = closeModal;
+    $("btnCancel").onclick = closeModal;
+    $("modalBack").addEventListener("click", (e)=>{ if(e.target === $("modalBack")) closeModal(); });
+
+    // ---------------- Rendering ----------------
+    function refresh(){
+      const ct = currentTech();
+      $("whoPill").textContent = ct ? `Текущ: ${ct.name} • ${state.role==="admin" ? "Админ" : "Техник"}` : `Текущ: —`;
+      $("statsPill").textContent =
+        `${state.installed.length} инст. • ${state.demoMachines.length} демо • ${state.service.length} сервиз • ${state.parts.length} части • ${state.consumables.length} конс.`;
+
+      $("roleSelect").value = state.role;
+      renderTechSelects();
+
+      renderInstalled();
+      renderDemo();
+      renderDemoLoans();
+      renderService();
+      renderPM();
+      renderParts();
+      renderPartRequests();
+      renderCons();
+      renderConsHistory();
+      renderMyInv();
+      renderAdminInv();
+    }
+
+    function renderTechSelects(){
+      const opts = state.techs.map(t=>({ value:t.id, label:t.name }));
+      const curSel = $("currentTechSelect");
+      curSel.innerHTML = opts.map(o=>{
+        const sel = o.value === state.currentTechId ? "selected" : "";
+        return `<option value="${escapeHtml(o.value)}" ${sel}>${escapeHtml(o.label)}</option>`;
+      }).join("");
+
+      const adminPick = $("adminTechPick");
+      if(adminPick){
+        const canAdminSee = state.role === "admin";
+        adminPick.disabled = !canAdminSee;
+        adminPick.innerHTML = (canAdminSee ? opts : [{value:"",label:"—"}]).map(o=>{
+          const sel = o.value === adminPick.value ? "selected" : "";
+          return `<option value="${escapeHtml(o.value)}" ${sel}>${escapeHtml(o.label)}</option>`;
+        }).join("");
+
+        if(canAdminSee && !adminPick.value && state.techs[0]) adminPick.value = state.techs[0].id;
+      }
+
+      $("btnAddTech").disabled = (state.role !== "admin");
+      $("newTechName").disabled = (state.role !== "admin");
+    }
+
+    // ---- Installed base ----
+    function renderInstalled(){
+      const q = norm($("qInstalled").value);
+      const rows = state.installed
+        .map(r=>({ r, c:getClient(r.clientId) }))
+        .filter(x=>{
+          const c = x.c || {};
+          const blob =
+            norm(x.r.date)+" "+norm(c.name)+" "+norm(c.phone)+" "+norm(c.address)+" "+
+            norm(x.r.machineType)+" "+norm(x.r.machineSerial)+" "+norm(x.r.applicatorSerial)+" "+norm(x.r.description);
+          return blob.includes(q);
+        });
+
+      $("installedCount").textContent = `${rows.length} записа`;
+      $("installedEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("installedTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({r,c})=>`
+        <tr>
+          <td>${escapeHtml(r.date||"")}</td>
+          <td>${escapeHtml(c?.name||"—")}</td>
+          <td>${escapeHtml(c?.phone||"")}</td>
+          <td class="muted">${escapeHtml(c?.address||"")}</td>
+          <td>${escapeHtml(r.machineType||"")}</td>
+          <td>${escapeHtml(r.machineSerial||"")}</td>
+          <td>${escapeHtml(r.applicatorSerial||"")}</td>
+          <td class="muted">${escapeHtml(r.description||"")}</td>
+          <td>
+            <div class="actions">
+              <button class="btn" data-act="editInstalled" data-id="${r.id}">Редакция</button>
+              <button class="btn danger" data-act="delInstalled" data-id="${r.id}">Изтрий</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // ---- Demo ----
+    function renderDemo(){
+      const q = norm($("qDemo").value);
+      const rows = state.demoMachines
+        .map(m=>{
+          const loan = activeDemoLoan(m.id);
+          const client = loan ? getClient(loan.clientId) : null;
+          return { m, loan, client };
+        })
+        .filter(x=>{
+          const blob =
+            norm(x.m.type)+" "+norm(x.m.machineSerial)+" "+norm(x.m.applicatorSerial)+" "+norm(x.m.status)+" "+
+            norm(x.client?.name);
+          return blob.includes(q);
+        });
+
+      $("demoCount").textContent = `${rows.length} записа`;
+      $("demoEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("demoTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({m,loan,client})=>{
+        const atClient = loan ? `${client?.name||"—"} (${loan.giveDate})` : "—";
+        const canReturn = norm(m.status) === "при клиент";
+        return `
+          <tr>
+            <td>${escapeHtml(m.type)}</td>
+            <td>${escapeHtml(m.machineSerial)}</td>
+            <td>${escapeHtml(m.applicatorSerial||"")}</td>
+            <td>${statusTag(m.status)}</td>
+            <td class="muted">${escapeHtml(atClient)}</td>
+            <td>
+              <div class="actions">
+                <button class="btn" data-act="editDemo" data-id="${m.id}">Редакция</button>
+                ${canReturn ? `<button class="btn ok" data-act="returnDemo" data-id="${m.id}">Върната</button>` : ``}
+                <button class="btn danger" data-act="delDemo" data-id="${m.id}">Изтрий</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderDemoLoans(){
+      const q = norm($("qDemoLoans").value);
+      const rows = state.demoLoans
+        .map(l=>{
+          const c = getClient(l.clientId);
+          const d = getDemo(l.demoId);
+          return { l, c, d };
+        })
+        .filter(x=>{
+          const blob =
+            norm(x.l.giveDate)+" "+norm(x.l.returnDate)+" "+norm(x.c?.name)+" "+norm(x.c?.phone)+" "+norm(x.c?.address)+" "+
+            norm(x.d?.machineSerial)+" "+norm(x.d?.type)+" "+norm(x.l.note);
+          return blob.includes(q);
+        });
+
+      $("demoLoansCount").textContent = `${rows.length} записа`;
+      $("demoLoansEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("demoLoansTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({l,c,d})=>`
+        <tr>
+          <td>${escapeHtml(l.giveDate||"")}</td>
+          <td>${escapeHtml(l.returnDate||"")}</td>
+          <td>${escapeHtml(c?.name||"—")}</td>
+          <td>${escapeHtml(c?.phone||"")}</td>
+          <td class="muted">${escapeHtml(c?.address||"")}</td>
+          <td>${escapeHtml(d?.type||"—")}</td>
+          <td>${escapeHtml(d?.machineSerial||"")}</td>
+          <td>${escapeHtml(d?.applicatorSerial||"")}</td>
+          <td class="muted">${escapeHtml(l.note||"")}</td>
+        </tr>
+      `).join("");
+    }
+
+    // ---- PM ----
+    function pmForInstalled(installedId){
+      return state.pmRecords.find(p=>p.installedId===installedId) || null;
+    }
+    function pmStatus(lastDate){
+      if(!lastDate) return { cls:"bad", label:"Чака профилактика", next:"" };
+      const next = addYears(lastDate, 1);
+      const days = daysBetween(todayISO(), next);
+      if(days < 0) return { cls:"bad", label:"Чака профилактика", next };
+      return { cls:"good", label:"Извършена", next };
+    }
+    function renderPM(){
+      const q = norm($("qPM").value);
+      const rows = state.installed
+        .map(inst=>{
+          const c = getClient(inst.clientId);
+          const rec = pmForInstalled(inst.id);
+          const st = pmStatus(rec?.lastDate || "");
+          return { inst, c, rec, st };
+        })
+        .filter(x=>{
+          const blob =
+            norm(x.c?.name)+" "+norm(x.inst.machineSerial)+" "+norm(x.inst.machineType)+" "+norm(x.rec?.lastDate)+" "+norm(x.st.next)+" "+norm(x.st.label);
+          return blob.includes(q);
+        });
+
+      $("pmCount").textContent = `${rows.length} записа`;
+      $("pmEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("pmTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({inst,c,rec,st})=>`
+        <tr>
+          <td>${escapeHtml(c?.name||"—")}</td>
+          <td>${escapeHtml(c?.phone||"")}</td>
+          <td class="muted">${escapeHtml(c?.address||"")}</td>
+          <td>${escapeHtml(inst.machineType||"")}</td>
+          <td>${escapeHtml(inst.machineSerial||"")}</td>
+          <td>${escapeHtml(rec?.lastDate||"")}</td>
+          <td>${escapeHtml(st.next||"")}</td>
+          <td>${badge(st.cls, st.label)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn ok" data-act="pmDoneToday" data-id="${inst.id}">Извършена (днес)</button>
+              <button class="btn" data-act="pmEdit" data-id="${inst.id}">Задай дата</button>
+              ${rec ? `<button class="btn danger" data-act="pmClear" data-id="${inst.id}">Изчисти</button>` : ``}
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // ---- Parts ----
+    function renderParts(){
+      const q = norm($("qParts").value);
+      const rows = state.parts.filter(p=>{
+        const blob = norm(p.sku)+" "+norm(p.name)+" "+String(p.qty||0);
+        return blob.includes(q);
+      });
+      $("partsCount").textContent = `${rows.length} записа`;
+      $("partsEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("partsTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(p=>`
+        <tr>
+          <td>${escapeHtml(p.sku||"")}</td>
+          <td>${escapeHtml(p.name||"")}</td>
+          <td>${escapeHtml(String(p.qty??0))}</td>
+          <td>
+            <div class="actions">
+              <button class="btn" data-act="editPart" data-id="${p.id}">Редакция</button>
+              <button class="btn danger" data-act="delPart" data-id="${p.id}">Изтрий</button>
+              <button class="btn" data-act="addStockPart" data-id="${p.id}">+ Наличност</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderPartRequests(){
+      const q = norm($("qPartReq").value);
+      const rows = state.partRequests
+        .map(r=>{
+          const p = getPart(r.partId);
+          const t = getTech(r.techId);
+          return { r, p, t };
+        })
+        .filter(x=>{
+          const blob =
+            norm(x.r.date)+" "+norm(x.p?.name)+" "+norm(x.p?.sku)+" "+String(x.r.qty||0)+" "+norm(x.r.status)+" "+norm(x.t?.name)+" "+norm(x.r.note);
+          return blob.includes(q);
+        });
+
+      $("partReqCount").textContent = `${rows.length} заявки`;
+      $("partReqEmpty").style.display = rows.length ? "none" : "block";
+
+      const isAdmin = state.role === "admin";
+      const tbody = $("partReqTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({r,p,t})=>{
+        const status = r.status === "чака" ? badge("warn","Чака") :
+                       r.status === "одобрена" ? badge("good","Одобрена") :
+                       badge("bad","Отказана");
+        return `
+          <tr>
+            <td>${escapeHtml(r.date||"")}</td>
+            <td>${escapeHtml((p?.sku||"") + " " + (p?.name||""))}</td>
+            <td>${escapeHtml(String(r.qty||0))}</td>
+            <td>${status}</td>
+            <td>${escapeHtml(t?.name||"—")}</td>
+            <td class="muted">${escapeHtml(r.note||"")}</td>
+            <td>
+              <div class="actions">
+                <button class="btn" data-act="delPartReq" data-id="${r.id}">Изтрий</button>
+                ${isAdmin && r.status==="чака" ? `<button class="btn ok" data-act="approveReq" data-id="${r.id}">Одобри</button>` : ""}
+                ${isAdmin && r.status==="чака" ? `<button class="btn danger" data-act="denyReq" data-id="${r.id}">Откажи</button>` : ""}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ---- Consumables ----
+    function renderCons(){
+      const q = norm($("qCons").value);
+      const rows = state.consumables.filter(c=>{
+        const blob = norm(c.name)+" "+String(c.qty||0);
+        return blob.includes(q);
+      });
+      $("consCount").textContent = `${rows.length} записа`;
+      $("consEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("consTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(c=>`
+        <tr>
+          <td>${escapeHtml(c.name||"")}</td>
+          <td>${escapeHtml(String(c.qty??0))}</td>
+          <td>
+            <div class="actions">
+              <button class="btn" data-act="editCons" data-id="${c.id}">Редакция</button>
+              <button class="btn danger" data-act="delCons" data-id="${c.id}">Изтрий</button>
+              <button class="btn" data-act="addStockCons" data-id="${c.id}">+ Наличност</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderConsHistory(){
+      const q = norm($("qConsHist").value);
+      const rows = state.consHistory
+        .map(h=>{
+          const inst = getInstalled(h.installedId);
+          const c = inst ? getClient(inst.clientId) : null;
+          const item = getCons(h.itemId);
+          return { h, c, item };
+        })
+        .filter(x=>{
+          const blob =
+            norm(x.h.date)+" "+norm(x.c?.name)+" "+norm(x.c?.phone)+" "+norm(x.c?.address)+" "+norm(x.item?.name)+" "+String(x.h.qty||0);
+          return blob.includes(q);
+        });
+
+      $("consHistCount").textContent = `${rows.length} записа`;
+      $("consHistEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("consHistTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({h,c,item})=>`
+        <tr>
+          <td>${escapeHtml(h.date||"")}</td>
+          <td>${escapeHtml(c?.name||"—")}</td>
+          <td>${escapeHtml(c?.phone||"")}</td>
+          <td class="muted">${escapeHtml(c?.address||"")}</td>
+          <td>${escapeHtml(item?.name||"—")}</td>
+          <td>${escapeHtml(String(h.qty||0))}</td>
+          <td>
+            <div class="actions">
+              <button class="btn danger" data-act="delConsHist" data-id="${h.id}">Изтрий</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // ---- Service ----
+    function renderService(){
+      const q = norm($("qService").value);
+      const rows = state.service
+        .map(s=>{
+          const inst = getInstalled(s.installedId);
+          const c = inst ? getClient(inst.clientId) : null;
+          const t = getTech(s.techId);
+          const partsText = (s.partsUsed||[]).map(u=>{
+            const p = getPart(u.partId);
+            return `${p?.sku||"?"} ${p?.name||"?"} x${u.qty}`;
+          }).join("; ");
+          return { s, inst, c, t, partsText };
+        })
+        .filter(x=>{
+          const blob =
+            norm(x.s.date)+" "+norm(x.c?.name)+" "+norm(x.inst?.machineSerial)+" "+norm(x.inst?.machineType)+" "+
+            norm(x.s.description)+" "+norm(x.partsText)+" "+norm(x.t?.name);
+          return blob.includes(q);
+        });
+
+      $("serviceCount").textContent = `${rows.length} записа`;
+      $("serviceEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("serviceTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({s,inst,c,t,partsText})=>`
+        <tr>
+          <td>${escapeHtml(s.date||"")}</td>
+          <td>${escapeHtml(c?.name||"—")}</td>
+          <td>${escapeHtml(c?.phone||"")}</td>
+          <td class="muted">${escapeHtml(c?.address||"")}</td>
+          <td>${escapeHtml(inst?.machineType||"—")}</td>
+          <td>${escapeHtml(inst?.machineSerial||"")}</td>
+          <td>${escapeHtml(inst?.applicatorSerial||"")}</td>
+          <td class="muted">${escapeHtml(s.description||"")}</td>
+          <td class="muted">${escapeHtml(partsText||"")}</td>
+          <td>${escapeHtml(t?.name||"—")}</td>
+          <td>
+            <div class="actions">
+              <button class="btn" data-act="editService" data-id="${s.id}">Редакция</button>
+              <button class="btn danger" data-act="delService" data-id="${s.id}">Изтрий</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // ---- Tech inventory ----
+    function renderMyInv(){
+      const tech = currentTech();
+      const q = norm($("qMyInv").value);
+      if(!tech){
+        $("myInvCount").textContent = "0";
+        $("myInvEmpty").style.display = "block";
+        $("myInvTable").querySelector("tbody").innerHTML = "";
+        return;
+      }
+      const m = invMap(tech.id);
+      const rows = Object.entries(m).map(([partId, qty])=>{
+        const p = getPart(partId);
+        return { p, qty: Number(qty||0) };
+      }).filter(x=>{
+        const blob = norm(x.p?.sku)+" "+norm(x.p?.name)+" "+String(x.qty||0);
+        return blob.includes(q);
+      });
+
+      $("myInvCount").textContent = `${rows.length}`;
+      $("myInvEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("myInvTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({p,qty})=>`
+        <tr>
+          <td>${escapeHtml(p?.sku||"—")}</td>
+          <td>${escapeHtml(p?.name||"—")}</td>
+          <td>${escapeHtml(String(qty))}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderAdminInv(){
+      const can = state.role === "admin";
+      const q = norm($("qAdminInv").value);
+      if(!can){
+        $("adminInvCount").textContent = "0";
+        $("adminInvEmpty").style.display = "block";
+        $("adminInvTable").querySelector("tbody").innerHTML = "";
+        return;
+      }
+      const techId = $("adminTechPick").value || state.techs[0]?.id || "";
+      const m = techId ? invMap(techId) : {};
+      const rows = Object.entries(m).map(([partId, qty])=>{
+        const p = getPart(partId);
+        return { p, qty: Number(qty||0) };
+      }).filter(x=>{
+        const blob = norm(x.p?.sku)+" "+norm(x.p?.name)+" "+String(x.qty||0);
+        return blob.includes(q);
+      });
+
+      $("adminInvCount").textContent = `${rows.length}`;
+      $("adminInvEmpty").style.display = rows.length ? "none" : "block";
+
+      const tbody = $("adminInvTable").querySelector("tbody");
+      tbody.innerHTML = rows.map(({p,qty})=>`
+        <tr>
+          <td>${escapeHtml(p?.sku||"—")}</td>
+          <td>${escapeHtml(p?.name||"—")}</td>
+          <td>${escapeHtml(String(qty))}</td>
+        </tr>
+      `).join("");
+    }
+
+    // ---------------- Filters ----------------
+    $("qInstalled").addEventListener("input", renderInstalled);
+    $("qDemo").addEventListener("input", renderDemo);
+    $("qDemoLoans").addEventListener("input", renderDemoLoans);
+    $("qService").addEventListener("input", renderService);
+    $("qPM").addEventListener("input", renderPM);
+    $("qParts").addEventListener("input", renderParts);
+    $("qPartReq").addEventListener("input", renderPartRequests);
+    $("qCons").addEventListener("input", renderCons);
+    $("qConsHist").addEventListener("input", renderConsHistory);
+    $("qMyInv").addEventListener("input", renderMyInv);
+    $("qAdminInv").addEventListener("input", renderAdminInv);
+
+    $("adminTechPick").addEventListener("change", renderAdminInv);
+
+    // ---------------- Settings ----------------
+    $("roleSelect").addEventListener("change", ()=>{
+      state.role = $("roleSelect").value;
+      saveState();
+      toast("Ролята е сменена.");
+    });
+    $("currentTechSelect").addEventListener("change", ()=>{
+      state.currentTechId = $("currentTechSelect").value;
+      saveState();
+      toast("Сменен текущ техник.");
+    });
+    $("btnAddTech").onclick = ()=>{
+      if(state.role !== "admin"){ toast("Само админ може да добавя техници."); return; }
+      const name = ($("newTechName").value||"").trim();
+      if(!name){ toast("Въведи име на техник."); return; }
+      const t = { id: uuid(), name };
+      state.techs.push(t);
+      state.techInventory[t.id] = {};
+      $("newTechName").value = "";
+      saveState();
+      toast("Добавен техник.");
+    };
+
+    // ---------------- Add flows ----------------
+    function addClientFlow(){
+      openModal("Добави клиент", [
+        { key:"name", label:"Клиент", placeholder:"име на клиент", full:true },
+        { key:"phone", label:"Телефон", placeholder:"пример: 0888 123 456" },
+        { key:"address", label:"Адрес", placeholder:"град, улица, №", full:true },
+      ], (d)=>{
+        if(!d.name){ toast("Клиентът е задължителен."); return; }
+        state.clients.unshift({ id: uuid(), name:d.name, phone:d.phone, address:d.address });
+        saveState();
+        toast("Клиентът е добавен.");
+      });
+    }
+    $("btnAddClient").onclick = addClientFlow;
+
+    $("btnAddInstalled").onclick = ()=>{
+      if(state.clients.length === 0){ toast("Първо добави клиент."); return; }
+      const clientOptions = state.clients.map(c=>({ value:c.id, label:`${c.name}${c.phone ? " • "+c.phone : ""}` }));
+      openModal("Добави инсталирана машина (в базата)", [
+        { key:"date", label:"Дата (YYYY-MM-DD)", value: todayISO() },
+        { key:"clientId", label:"Клиент", type:"select", value: clientOptions[0].value, options: clientOptions, full:true },
+        { key:"machineType", label:"Вид машина", placeholder:"пример: Лазер X9", full:true },
+        { key:"machineSerial", label:"Сер.№ машина", placeholder:"пример: LX9-888" },
+        { key:"applicatorSerial", label:"Сер.№ апликатор", placeholder:"пример: AP-9009" },
+        { key:"description", label:"Описание", type:"textarea", placeholder:"описание/бележка", full:true },
+      ], (d)=>{
+        if(!d.date || !d.clientId || !d.machineType || !d.machineSerial){
+          toast("Дата, клиент, вид машина и сер.№ машина са задължителни.");
+          return;
+        }
+        state.installed.unshift({
+          id: uuid(),
+          date: d.date,
+          clientId: d.clientId,
+          machineType: d.machineType,
+          machineSerial: d.machineSerial,
+          applicatorSerial: d.applicatorSerial,
+          description: d.description
+        });
+        saveState();
+        toast("Добавено в базата.");
+      });
+    };
+
+    $("btnAddDemoMachine").onclick = ()=>{
+      openModal("Добави демо машина", [
+        { key:"type", label:"Вид машина", placeholder:"пример: Демо Лазер X3", full:true },
+        { key:"machineSerial", label:"Сер.№ машина", placeholder:"пример: DLX3-020" },
+        { key:"applicatorSerial", label:"Сер.№ апликатор", placeholder:"пример: AP-3021" },
+        { key:"status", label:"Статус", type:"select", value:"налична", options:[
+          {value:"налична", label:"Налична"},
+          {value:"при клиент", label:"При клиент"},
+        ]},
+      ], (d)=>{
+        if(!d.type || !d.machineSerial){ toast("Вид машина и Сер.№ машина са задължителни."); return; }
+        state.demoMachines.unshift({
+          id: uuid(),
+          type: d.type,
+          machineSerial: d.machineSerial,
+          applicatorSerial: d.applicatorSerial,
+          status: d.status || "налична"
+        });
+        saveState();
+        toast("Демо машината е добавена.");
+      });
+    };
+
+    $("btnGiveDemo").onclick = ()=>{
+      if(state.clients.length === 0){ toast("Няма клиенти. Добави клиент."); return; }
+      const available = state.demoMachines.filter(m=>norm(m.status)==="налична");
+      if(available.length === 0){ toast("Няма налични демо машини."); return; }
+
+      const demoOptions = available.map(m=>({ value:m.id, label:`${m.type} • ${m.machineSerial}${m.applicatorSerial ? " • "+m.applicatorSerial : ""}` }));
+      const clientOptions = state.clients.map(c=>({ value:c.id, label:`${c.name}${c.phone ? " • "+c.phone : ""}` }));
+
+      openModal("Дай демо машина при клиент", [
+        { key:"giveDate", label:"Дата (YYYY-MM-DD)", value: todayISO() },
+        { key:"clientId", label:"Клиент", type:"select", value: clientOptions[0].value, options: clientOptions, full:true },
+        { key:"demoId", label:"Налична демо машина", type:"select", value: demoOptions[0].value, options: demoOptions, full:true },
+        { key:"note", label:"Бележка", type:"textarea", placeholder:"пример: демо за 7 дни", full:true },
+      ], (d)=>{
+        const client = getClient(d.clientId);
+        const demo = getDemo(d.demoId);
+        if(!client || !demo){ toast("Невалиден избор."); return; }
+        if(norm(demo.status)!=="налична"){ toast("Тази демо машина вече не е налична."); return; }
+
+        demo.status = "при клиент";
+        state.demoLoans.unshift({
+          id: uuid(),
+          demoId: demo.id,
+          clientId: client.id,
+          giveDate: d.giveDate || todayISO(),
+          returnDate: "",
+          note: d.note
+        });
+
+        saveState();
+        toast("Дадено. Статусът на демо машината е сменен.");
+      });
+    };
+
+    $("btnMarkPM").onclick = ()=>{
+      if(state.installed.length === 0){ toast("Няма инсталирани машини (база)."); return; }
+      const instOptions = state.installed.map(r=>{
+        const c = getClient(r.clientId);
+        return { value:r.id, label:`${c?.name||"—"} • ${r.machineSerial} • ${r.machineType}` };
+      });
+      openModal("Отбележи профилактика", [
+        { key:"installedId", label:"Избери клиент/машина (от базата)", type:"select", value: instOptions[0].value, options: instOptions, full:true },
+        { key:"lastDate", label:"Дата на профилактика (YYYY-MM-DD)", value: todayISO() },
+      ], (d)=>{
+        const inst = getInstalled(d.installedId);
+        if(!inst || !d.lastDate){ toast("Невалидни данни."); return; }
+        const existing = state.pmRecords.find(p=>p.installedId===inst.id);
+        if(existing) existing.lastDate = d.lastDate;
+        else state.pmRecords.unshift({ id: uuid(), installedId: inst.id, lastDate: d.lastDate });
+        saveState();
+        toast("Профилактиката е отбелязана.");
+      });
+    };
+
+    // ---- REQUEST FROM STOCK ----
+    $("btnRequestFromStock").onclick = ()=>{
+      const tech = currentTech();
+      if(!tech){ toast("Избери текущ техник в Настройки."); return; }
+      if(state.parts.length === 0){ toast("Няма резервни части в склада."); return; }
+
+      const partOptions = state.parts.map(p=>({ value:p.id, label:`${p.sku} ${p.name} (склад: ${p.qty})` }));
+
+      openModal("Заявка към админ (вземане от склад)", [
+        { key:"date", label:"Дата (YYYY-MM-DD)", value: todayISO() },
+        { key:"partId", label:"Част", type:"select", value: partOptions[0].value, options: partOptions, full:true },
+        { key:"qty", label:"Количество", placeholder:"пример: 1", value:"1" },
+        { key:"note", label:"Бележка", type:"textarea", placeholder:"за какво е / по желание", full:true },
+      ], (d)=>{
+        const qty = Number(d.qty||0);
+        if(!d.partId || !isFinite(qty) || qty<=0){ toast("Невалидни данни."); return; }
+        state.partRequests.unshift({
+          id: uuid(),
+          date: d.date || todayISO(),
+          partId: d.partId,
+          qty,
+          status: "чака",
+          techId: tech.id,
+          note: d.note
+        });
+        saveState();
+        toast("Заявката е изпратена.");
+      });
+    };
+    $("btnNewPartReq").onclick = ()=> $("btnRequestFromStock").onclick();
+
+    // ---- SERVICE: deduct from technician inventory ----
+    $("btnAddService").onclick = ()=>{
+      const tech = currentTech();
+      if(!tech){ toast("Избери текущ техник в Настройки."); return; }
+      if(state.installed.length === 0){ toast("Няма инсталирани машини (база)."); return; }
+
+      const instOptions = state.installed.map(r=>{
+        const c = getClient(r.clientId);
+        return { value:r.id, label:`${c?.name||"—"} • ${r.machineSerial} • ${r.machineType}` };
+      });
+
+      const myMap = invMap(tech.id);
+      const invPartIds = Object.keys(myMap);
+      const invOptions = invPartIds.map(pid=>{
+        const p = getPart(pid);
+        return { value: pid, label: `${p?.sku||"?"} ${p?.name||"?"} (при мен: ${invQty(tech.id, pid)})` };
+      });
+
+      openModal("Нов ремонт", [
+        { key:"date", label:"Дата (YYYY-MM-DD)", value: todayISO() },
+        { key:"installedId", label:"Избери клиент/машина (от базата)", type:"select", value: instOptions[0].value, options: instOptions, full:true },
+        { key:"description", label:"Описание / ремонт", type:"textarea", placeholder:"какво е направено", full:true },
+
+        { key:"part1", label:"Част 1 (от моята наличност)", type:"select", value:"", options:[{value:"",label:"— няма —"}].concat(invOptions), full:true },
+        { key:"qty1", label:"Кол. 1", placeholder:"пример: 1", value:"" },
+
+        { key:"part2", label:"Част 2", type:"select", value:"", options:[{value:"",label:"— няма —"}].concat(invOptions), full:true },
+        { key:"qty2", label:"Кол. 2", placeholder:"пример: 1", value:"" },
+
+        { key:"part3", label:"Част 3", type:"select", value:"", options:[{value:"",label:"— няма —"}].concat(invOptions), full:true },
+        { key:"qty3", label:"Кол. 3", placeholder:"пример: 1", value:"" },
+      ], (d)=>{
+        const inst = getInstalled(d.installedId);
+        if(!inst){ toast("Невалиден избор."); return; }
+        if(!d.date){ toast("Дата е задължителна."); return; }
+
+        const partsUsed = [];
+        for(const n of [1,2,3]){
+          const pid = d["part"+n];
+          const q = Number(d["qty"+n] || 0);
+          if(pid && q>0) partsUsed.push({ partId: pid, qty: q });
+        }
+
+        for(const u of partsUsed){
+          const have = invQty(tech.id, u.partId);
+          if(have < u.qty){
+            const p = getPart(u.partId);
+            toast(`Недостатъчна наличност при теб: ${p?.sku||"?"} ${p?.name||"?"}.`);
+            return;
+          }
+        }
+        for(const u of partsUsed){
+          addInv(tech.id, u.partId, -u.qty);
+        }
+
+        state.service.unshift({
+          id: uuid(),
+          date: d.date,
+          installedId: inst.id,
+          description: d.description,
+          techId: tech.id,
+          partsUsed
+        });
+
+        saveState();
+        toast(partsUsed.length ? "Ремонт + изписани части от твоята наличност." : "Ремонтът е записан.");
+      });
+    };
+
+    // ---- Add part/cons ----
+    $("btnAddPart").onclick = ()=>{
+      openModal("Добави резервна част", [
+        { key:"sku", label:"Артикул №", placeholder:"пример: P-300" },
+        { key:"name", label:"Име", placeholder:"име на резервната част", full:true },
+        { key:"qty", label:"Наличност (склад)", placeholder:"пример: 10" },
+      ], (d)=>{
+        if(!d.sku || !d.name){ toast("Артикул № и име са задължителни."); return; }
+        const qty = Number(d.qty||0);
+        state.parts.unshift({ id: uuid(), sku:d.sku, name:d.name, qty: isFinite(qty)? qty : 0 });
+        saveState();
+        toast("Добавено.");
+      });
+    };
+
+    $("btnAddCons").onclick = ()=>{
+      openModal("Добави консуматив", [
+        { key:"name", label:"Име на артикул", placeholder:"пример: Филтър", full:true },
+        { key:"qty", label:"Наличност", placeholder:"пример: 20" },
+      ], (d)=>{
+        if(!d.name){ toast("Името е задължително."); return; }
+        const qty = Number(d.qty||0);
+        state.consumables.unshift({ id: uuid(), name:d.name, qty: isFinite(qty)? qty : 0 });
+        saveState();
+        toast("Добавено.");
+      });
+    };
+
+    $("btnIssueCons").onclick = ()=>{
+      if(state.installed.length === 0){ toast("Няма инсталирани машини (база)."); return; }
+      if(state.consumables.length === 0){ toast("Няма консумативи (склад)."); return; }
+
+      const instOptions = state.installed.map(r=>{
+        const c = getClient(r.clientId);
+        return { value:r.id, label:`${c?.name||"—"} • ${r.machineSerial}` };
+      });
+      const consOptions = state.consumables.map(x=>({ value:x.id, label:`${x.name} (нал. ${x.qty})` }));
+
+      openModal("Изпиши консуматив към клиент", [
+        { key:"date", label:"Дата (YYYY-MM-DD)", value: todayISO() },
+        { key:"installedId", label:"Клиент/машина (от базата)", type:"select", value: instOptions[0].value, options: instOptions, full:true },
+        { key:"itemId", label:"Консуматив", type:"select", value: consOptions[0].value, options: consOptions, full:true },
+        { key:"qty", label:"Количество", placeholder:"пример: 1", value:"1" },
+      ], (d)=>{
+        const inst = getInstalled(d.installedId);
+        const item = getCons(d.itemId);
+        const qty = Number(d.qty||0);
+
+        if(!inst || !item || !isFinite(qty) || qty<=0){ toast("Невалидни данни."); return; }
+        if((item.qty||0) < qty){ toast("Недостатъчна наличност."); return; }
+
+        item.qty -= qty;
+        state.consHistory.unshift({ id: uuid(), date: d.date || todayISO(), installedId: inst.id, itemId: item.id, qty });
+        saveState();
+        toast("Изписано.");
+      });
+    };
+
+    // ---------------- Actions ----------------
+    document.addEventListener("click", (e)=>{
+      const b = e.target.closest("button[data-act]");
+      if(!b) return;
+      const act = b.dataset.act;
+      const id = b.dataset.id;
+
+      if(act === "delInstalled"){
+        if(!confirm("Да изтрия този запис от базата?")) return;
+        state.installed = state.installed.filter(x=>x.id!==id);
+        state.pmRecords = state.pmRecords.filter(p=>p.installedId!==id);
+        saveState(); toast("Изтрито.");
+      }
+      if(act === "editInstalled"){
+        const r = getInstalled(id);
+        if(!r) return;
+        const cOpts = state.clients.map(c=>({value:c.id, label:`${c.name}${c.phone ? " • "+c.phone : ""}`}));
+        openModal("Редакция: инсталирана машина (база)", [
+          { key:"date", label:"Дата", value:r.date },
+          { key:"clientId", label:"Клиент", type:"select", value:r.clientId, options:cOpts, full:true },
+          { key:"machineType", label:"Вид машина", value:r.machineType, full:true },
+          { key:"machineSerial", label:"Сер.№ машина", value:r.machineSerial },
+          { key:"applicatorSerial", label:"Сер.№ апликатор", value:r.applicatorSerial },
+          { key:"description", label:"Описание", type:"textarea", value:r.description, full:true },
+        ], (d)=>{
+          if(!d.date || !d.clientId || !d.machineType || !d.machineSerial){ toast("Липсват задължителни полета."); return; }
+          r.date=d.date; r.clientId=d.clientId; r.machineType=d.machineType; r.machineSerial=d.machineSerial;
+          r.applicatorSerial=d.applicatorSerial; r.description=d.description;
+          saveState(); toast("Запазено.");
+        });
+      }
+
+      if(act === "delDemo"){
+        const m = getDemo(id);
+        if(!m) return;
+        if(!confirm(`Да изтрия демо машина: ${m.machineSerial}?`)) return;
+        state.demoLoans = state.demoLoans.filter(l=>l.demoId!==id);
+        state.demoMachines = state.demoMachines.filter(x=>x.id!==id);
+        saveState(); toast("Изтрито.");
+      }
+      if(act === "editDemo"){
+        const m = getDemo(id);
+        if(!m) return;
+        openModal("Редакция: демо машина", [
+          { key:"type", label:"Вид машина", value:m.type, full:true },
+          { key:"machineSerial", label:"Сер.№ машина", value:m.machineSerial },
+          { key:"applicatorSerial", label:"Сер.№ апликатор", value:m.applicatorSerial },
+          { key:"status", label:"Статус", type:"select", value:m.status, options:[
+            {value:"налична", label:"Налична"},
+            {value:"при клиент", label:"При клиент"},
+          ]},
+        ], (d)=>{
+          if(!d.type || !d.machineSerial){ toast("Задължителни полета липсват."); return; }
+          m.type=d.type; m.machineSerial=d.machineSerial; m.applicatorSerial=d.applicatorSerial; m.status=d.status;
+          saveState(); toast("Запазено.");
+        });
+      }
+      if(act === "returnDemo"){
+        const m = getDemo(id);
+        if(!m) return;
+        const loan = activeDemoLoan(m.id);
+        if(!loan){ toast("Няма активен запис за тази демо машина."); return; }
+
+        openModal("Връщане на демо машина", [
+          { key:"returnDate", label:"Дата на връщане (YYYY-MM-DD)", value: todayISO() },
+          { key:"note", label:"Бележка (по избор)", type:"textarea", value: loan.note || "", full:true },
+        ], (d)=>{
+          loan.returnDate = d.returnDate || todayISO();
+          loan.note = d.note;
+          m.status = "налична";
+          saveState();
+          toast("Върната. Статусът е Налична.");
+        });
+      }
+
+      if(act === "delService"){
+        if(!confirm("Да изтрия сервизния запис? (няма връщане на части)")) return;
+        state.service = state.service.filter(x=>x.id!==id);
+        saveState(); toast("Изтрито.");
+      }
+      if(act === "editService"){
+        const s = state.service.find(x=>x.id===id);
+        if(!s) return;
+        openModal("Редакция: сервиз (без връщане на части)", [
+          { key:"date", label:"Дата", value:s.date },
+          { key:"description", label:"Описание / ремонт", type:"textarea", value:s.description, full:true },
+        ], (d)=>{
+          if(!d.date){ toast("Дата е задължителна."); return; }
+          s.date=d.date; s.description=d.description;
+          saveState(); toast("Запазено.");
+        });
+      }
+
+      if(act === "pmDoneToday"){
+        const existing = state.pmRecords.find(p=>p.installedId===id);
+        if(existing) existing.lastDate = todayISO();
+        else state.pmRecords.unshift({ id: uuid(), installedId: id, lastDate: todayISO() });
+        saveState(); toast("Отбелязано като извършена (днес).");
+      }
+      if(act === "pmEdit"){
+        const existing = state.pmRecords.find(p=>p.installedId===id);
+        openModal("Задай дата на профилактика", [
+          { key:"lastDate", label:"Последна профилактика (YYYY-MM-DD)", value: existing?.lastDate || todayISO() },
+        ], (d)=>{
+          if(!d.lastDate){ toast("Дата е задължителна."); return; }
+          if(existing) existing.lastDate = d.lastDate;
+          else state.pmRecords.unshift({ id: uuid(), installedId: id, lastDate: d.lastDate });
+          saveState(); toast("Запазено.");
+        });
+      }
+      if(act === "pmClear"){
+        if(!confirm("Да изчистя профилактиката?")) return;
+        state.pmRecords = state.pmRecords.filter(p=>p.installedId!==id);
+        saveState(); toast("Изчистено.");
+      }
+
+      if(act === "delPart"){
+        const p = getPart(id);
+        if(!p) return;
+        if(!confirm(`Да изтрия част: ${p.sku}?`)) return;
+        state.parts = state.parts.filter(x=>x.id!==id);
+        saveState(); toast("Изтрито.");
+      }
+      if(act === "editPart"){
+        const p = getPart(id);
+        if(!p) return;
+        openModal("Редакция: резервна част", [
+          { key:"sku", label:"Артикул №", value:p.sku },
+          { key:"name", label:"Име", value:p.name, full:true },
+          { key:"qty", label:"Наличност (склад)", value:String(p.qty??0) },
+        ], (d)=>{
+          if(!d.sku || !d.name){ toast("Артикул № и име са задължителни."); return; }
+          const q = Number(d.qty||0);
+          p.sku=d.sku; p.name=d.name; p.qty = isFinite(q) ? q : p.qty;
+          saveState(); toast("Запазено.");
+        });
+      }
+      if(act === "addStockPart"){
+        const p = getPart(id);
+        if(!p) return;
+        openModal("Добави наличност (склад)", [
+          { key:"add", label:`Колко да добавя към ${p.sku}?`, value:"1", full:true },
+        ], (d)=>{
+          const add = Number(d.add||0);
+          if(!isFinite(add) || add<=0){ toast("Невалидно количество."); return; }
+          p.qty += add;
+          saveState(); toast("Добавено.");
+        });
+      }
+
+      if(act === "delPartReq"){
+        if(!confirm("Да изтрия заявката?")) return;
+        state.partRequests = state.partRequests.filter(x=>x.id!==id);
+        saveState(); toast("Изтрито.");
+      }
+      if(act === "approveReq"){
+        if(state.role !== "admin"){ toast("Само админ може да одобрява."); return; }
+        const r = state.partRequests.find(x=>x.id===id);
+        if(!r || r.status!=="чака") return;
+        const p = getPart(r.partId);
+        if(!p){ toast("Липсва част."); return; }
+        if((p.qty||0) < (r.qty||0)){ toast("Недостатъчна наличност в склада."); return; }
+
+        p.qty -= r.qty;
+        addInv(r.techId, r.partId, r.qty);
+        r.status = "одобрена";
+        saveState();
+        toast("Одобрено: прехвърлено от склад към техника.");
+      }
+      if(act === "denyReq"){
+        if(state.role !== "admin"){ toast("Само админ може да отказва."); return; }
+        const r = state.partRequests.find(x=>x.id===id);
+        if(!r || r.status!=="чака") return;
+        r.status = "отказана";
+        saveState(); toast("Отказано.");
+      }
+
+      if(act === "delCons"){
+        const c = getCons(id);
+        if(!c) return;
+        if(!confirm(`Да изтрия консуматив: ${c.name}?`)) return;
+        state.consumables = state.consumables.filter(x=>x.id!==id);
+        saveState(); toast("Изтрито.");
+      }
+      if(act === "editCons"){
+        const c = getCons(id);
+        if(!c) return;
+        openModal("Редакция: консуматив", [
+          { key:"name", label:"Име", value:c.name, full:true },
+          { key:"qty", label:"Наличност", value:String(c.qty??0) },
+        ], (d)=>{
+          if(!d.name){ toast("Името е задължително."); return; }
+          const q = Number(d.qty||0);
+          c.name=d.name; c.qty = isFinite(q) ? q : c.qty;
+          saveState(); toast("Запазено.");
+        });
+      }
+      if(act === "addStockCons"){
+        const c = getCons(id);
+        if(!c) return;
+        openModal("Добави наличност (консуматив)", [
+          { key:"add", label:`Колко да добавя към ${c.name}?`, value:"1", full:true },
+        ], (d)=>{
+          const add = Number(d.add||0);
+          if(!isFinite(add) || add<=0){ toast("Невалидно количество."); return; }
+          c.qty += add;
+          saveState(); toast("Добавено.");
+        });
+      }
+      if(act === "delConsHist"){
+        if(!confirm("Да изтрия изписването? (няма връщане)")) return;
+        state.consHistory = state.consHistory.filter(x=>x.id!==id);
+        saveState(); toast("Изтрито.");
+      }
+    });
+
+    // ---------------- Backup ----------------
+    $("btnExport").onclick = ()=>{
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("Backup е изтеглен.");
+    };
+
+    $("fileImport").addEventListener("change", async (e)=>{
+      const file = e.target.files?.[0];
+      if(!file) return;
+      try{
+        const txt = await file.text();
+        const data = JSON.parse(txt);
+        if(!data || !Array.isArray(data.techs) || !Array.isArray(data.parts)){
+          toast("Невалиден бекъп."); return;
+        }
+        state = data;
+
+        state.role ??= "tech";
+        state.techs ??= [];
+        state.currentTechId ??= (state.techs[0]?.id || "");
+        state.techInventory ??= {};
+        for(const t of state.techs) state.techInventory[t.id] ??= {};
+
+        state.clients ??= [];
+        state.installed ??= [];
+        state.demoMachines ??= [];
+        state.demoLoans ??= [];
+        state.partRequests ??= [];
+        state.consumables ??= [];
+        state.consHistory ??= [];
+        state.service ??= [];
+        state.pmRecords ??= [];
+
+        saveState();
+        toast("Backup е импортнат.");
+      }catch{
+        toast("Не успях да прочета файла.");
+      }finally{
+        e.target.value = "";
+      }
+    });
+
+    $("btnReset").onclick = ()=>{
+      if(!confirm("Сигурен ли си, че да изчистя всичко?")) return;
+      localStorage.removeItem(KEY);
+      state = seed();
+      saveState();
+      toast("Изчистено.");
+    };
+
+    // ---------------- Filters (inputs exist in DOM) ----------------
+    $("qInstalled").addEventListener("input", renderInstalled);
+    $("qDemo").addEventListener("input", renderDemo);
+    $("qDemoLoans").addEventListener("input", renderDemoLoans);
+    $("qService").addEventListener("input", renderService);
+    $("qPM").addEventListener("input", renderPM);
+    $("qParts").addEventListener("input", renderParts);
+    $("qPartReq").addEventListener("input", renderPartRequests);
+    $("qCons").addEventListener("input", renderCons);
+    $("qConsHist").addEventListener("input", renderConsHistory);
+    $("qMyInv").addEventListener("input", renderMyInv);
+    $("qAdminInv").addEventListener("input", renderAdminInv);
+
+    
+    // ---------------- Auth (login/logout) ----------------
+    function showLogin(show){
+      const back = document.getElementById("loginBack");
+      if(!back) return;
+      back.style.display = show ? "flex" : "none";
+      if(show){
+        const err = document.getElementById("loginErr");
+        if(err) err.style.display = "none";
+        const u = document.getElementById("loginUser");
+        if(u) u.focus();
+      }
+    }
+
+    async function doLogin(){
+      const u = (document.getElementById("loginUser")?.value || "").trim();
+      const p = (document.getElementById("loginPass")?.value || "").trim();
+      try{
+        const res = await fetch("/login", {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({username:u, password:p})
+        });
+        if(!res.ok) throw new Error("bad");
+        showLogin(false);
+        await applyLoginContext();
+        refresh();
+        toast("Влязъл/влязла.");
+      }catch(e){
+        const err = document.getElementById("loginErr");
+        if(err) err.style.display = "block";
+      }
+    }
+
+    document.getElementById("btnDoLogin")?.addEventListener("click", doLogin);
+    document.getElementById("loginPass")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+
+    document.getElementById("btnLogout")?.addEventListener("click", async ()=>{
+      try{ await fetch("/logout", {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"}); }catch(e){}
+      toast("Изход.");
+      // reload to clear UI context; will show login modal again
+      location.reload();
+    });
+
+// ---------------- Start ----------------
+    (async ()=>{ const ok = await applyLoginContext(); if(!ok){ showLogin(true); return; } refresh(); setTab("demo"); })();
+  </script>
+</body>
+</html>
