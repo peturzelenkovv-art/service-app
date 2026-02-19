@@ -238,9 +238,17 @@ def login():
     record_fail(key)
     return jsonify({"status": "fail"}), 401
 
-@app.route("/logout", methods=["POST", "GET"])
+from flask import redirect  # добави горе при import-ите, ако го няма
+
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
     session.clear()
+
+    # Ако е от браузър (GET) – връщаме към началото
+    if request.method == "GET":
+        return redirect("/")
+
+    # Ако е от JavaScript (POST) – връщаме JSON
     return jsonify({"status": "ok"})
 
 def state_get():
