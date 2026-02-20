@@ -507,6 +507,123 @@ def api_installed_create():
     con.commit()
     con.close()
     return jsonify({"status":"ok"})
+    @app.route("/api/service_jobs", methods=["GET"])
+def api_service_jobs_list():
+    err = require_login()
+    if err:
+        return err
+
+    con = get_db()
+    cur = con.cursor()
+
+    if is_admin():
+        rows = cur.execute("""
+            SELECT sj.*, im.client_name, im.address, im.machine_type, im.machine_serial
+            FROM service_jobs sj
+            JOIN installed_machines im ON im.id = sj.installed_id
+            ORDER BY sj.id DESC
+        """).fetchall()
+    else:
+        rows = cur.execute("""
+            SELECT sj.*, im.client_name, im.address, im.machine_type, im.machine_serial
+            FROM service_jobs sj
+            JOIN installed_machines im ON im.id = sj.installed_id
+            WHERE sj.assigned_to=?
+            ORDER BY sj.id DESC
+        """, (session["username"],)).fetchall()
+
+    con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/service_jobs", methods=["POST"])
+def api_service_jobs_create():
+    err = require_admin()
+    if err:
+        return err
+
+    d = request.get_json(silent=True) or {}
+    assigned_to = (d.get("assigned_to") or "").strip()
+    installed_id = d.get("installed_id")
+
+    try:
+        installed_id = int(installed_id)
+    except Exception:
+        return jsonify({"status":"fail","message":"Невалидна машина"}), 400
+
+    if not assigned_to:
+        return jsonify({"status":"fail","message":"Липсва техник"}), 400
+
+    con = get_db()
+    cur = con.cursor()
+
+    tech = cur.execute(
+        "SELECT username FROM users WHERE username=? AND role='technician'",
+        (assigned_to,)
+    ).fetchone()
+    if not tech:
+        con.close()
+        return jsonify({"status":"fail","message":"Няма такъв техник"}), 400
+
+    machine = cur.execute(
+        "SELECT id FROM installed_machines WHERE id=?",
+        (installed_id,)
+    ).fetchone()
+    if not machine:
+        con.close()
+        return jsonify({"status":"fail","message":"Няма такава машина"}), 404
+
+    status = (d.get("status") or "waiting_team").strip()
+    if status not in ("waiting_team", "in_progress", "waiting_parts", "done"):
+        status = "waiting_team"
+
+    cur.execute("""
+        INSERT INTO service_jobs(created_at, installed_id, description, assigned_to, status, updated_at)
+        VALUES (?,?,?,?,?,?)
+    """, (
+        now_iso(),
+        installed_id,
+        (d.get("description") or "").strip(),
+        assigned_to,
+        status,
+        now_iso()
+    ))
+
+    con.commit()
+    con.close()
+    return jsonify({"status":"ok"})
+
+
+@app.route("/api/service_jobs/<int:job_id>/status", methods=["POST"])
+def api_service_job_set_status(job_id: int):
+    err = require_login()
+    if err:
+        return err
+
+    d = request.get_json(silent=True) or {}
+    status = (d.get("status") or "").strip()
+    if status not in ("waiting_team", "in_progress", "waiting_parts", "done"):
+        return jsonify({"status":"fail","message":"Невалиден статус"}), 400
+
+    con = get_db()
+    cur = con.cursor()
+
+    if is_admin():
+        row = cur.execute("SELECT id FROM service_jobs WHERE id=?", (job_id,)).fetchone()
+    else:
+        row = cur.execute(
+            "SELECT id FROM service_jobs WHERE id=? AND assigned_to=?",
+            (job_id, session["username"])
+        ).fetchone()
+
+    if not row:
+        con.close()
+        return jsonify({"status":"fail","message":"Няма достъп"}), 404
+
+    cur.execute("UPDATE service_jobs SET status=?, updated_at=? WHERE id=?", (status, now_iso(), job_id))
+    con.commit()
+    con.close()
+    return jsonify({"status":"ok"})
 @app.route("/api/parts", methods=["GET"])
 def api_parts_get():
     err = require_login()
