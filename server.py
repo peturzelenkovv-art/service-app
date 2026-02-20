@@ -507,7 +507,7 @@ def api_installed_create():
     con.commit()
     con.close()
     return jsonify({"status":"ok"})
-    @app.route("/api/service_jobs", methods=["GET"])
+@app.route("/api/service_jobs", methods=["GET"])
 def api_service_jobs_list():
     err = require_login()
     if err:
