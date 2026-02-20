@@ -430,6 +430,7 @@ def api_technicians():
     ).fetchall()
     con.close()
     return jsonify([{"username": r["username"], "display_name": r["display_name"] or r["username"]} for r in rows])
+    
 @app.route("/api/installed", methods=["GET"])
 def api_installed_list():
     err = require_login()
