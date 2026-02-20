@@ -96,7 +96,37 @@ def init_db():
         FOREIGN KEY(part_id) REFERENCES parts(id)
     )
     """)
+# ---------- NEW: installed machines база ----------
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS installed_machines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        created_at TEXT NOT NULL,
+        client_name TEXT NOT NULL,
+        phone TEXT,
+        address TEXT,
+        machine_type TEXT NOT NULL,
+        machine_serial TEXT NOT NULL,
+        applicator_serial TEXT,
+        description TEXT,
+        assigned_to TEXT NOT NULL,
+        FOREIGN KEY(assigned_to) REFERENCES users(username)
+    )
+    """)
 
+    # ---------- NEW: service jobs (сервизни дейности) ----------
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS service_jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        created_at TEXT NOT NULL,
+        installed_id INTEGER NOT NULL,
+        description TEXT,
+        assigned_to TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'waiting_team',
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(installed_id) REFERENCES installed_machines(id),
+        FOREIGN KEY(assigned_to) REFERENCES users(username)
+    )
+    """)
     cur.execute("SELECT COUNT(*) AS c FROM users")
     if cur.fetchone()["c"] == 0:
         cur.execute(
