@@ -454,7 +454,6 @@ def api_installed_list():
     con.close()
     return jsonify([dict(r) for r in rows])
 
-
 @app.route("/api/installed", methods=["POST"])
 def api_installed_create():
     err = require_admin()
@@ -462,10 +461,17 @@ def api_installed_create():
         return err
 
     d = request.get_json(silent=True) or {}
-    assigned_to = (d.get("assigned_to") or "").strip()
 
+    assigned_to = (d.get("assigned_to") or "").strip()
     if not assigned_to:
-        return jsonify({"status":"fail","message":"Липсва техник"}), 400
+        return jsonify({"status": "fail", "message": "Липсва техник"}), 400
+
+    client_name = (d.get("client_name") or "").strip()
+    machine_type = (d.get("machine_type") or "").strip()
+    machine_serial = (d.get("machine_serial") or "").strip()
+
+    if not client_name or not machine_type or not machine_serial:
+        return jsonify({"status": "fail", "message": "Липсват задължителни полета"}), 400
 
     con = get_db()
     cur = con.cursor()
@@ -474,39 +480,35 @@ def api_installed_create():
         "SELECT username FROM users WHERE username=? AND role='technician'",
         (assigned_to,)
     ).fetchone()
+
     if not tech:
         con.close()
-        return jsonify({"status":"fail","message":"Няма такъв техник"}), 400
+        return jsonify({"status": "fail", "message": "Няма такъв техник"}), 400
 
-    client_name = (d.get("client_name") or "").strip()
-    machine_type = (d.get("machine_type") or "").strip()
-    machine_serial = (d.get("machine_serial") or "").strip()
-
-    if not client_name or not machine_type or not machine_serial:
-        con.close()
-        return jsonify({"status":"fail","message":"Липсват задължителни полета"}), 400
-
-    cur.execute("""
+    cur.execute(
+        """
         INSERT INTO installed_machines(
             created_at, client_name, phone, address,
             machine_type, machine_serial, applicator_serial,
             description, assigned_to
         ) VALUES (?,?,?,?,?,?,?,?,?)
-    """, (
-        now_iso(),
-        client_name,
-        (d.get("phone") or "").strip(),
-        (d.get("address") or "").strip(),
-        machine_type,
-        machine_serial,
-        (d.get("applicator_serial") or "").strip(),
-        (d.get("description") or "").strip(),
-        assigned_to
-    ))
-con.commit()
-    con.close()
-    return jsonify({"status":"ok"})
+        """,
+        (
+            now_iso(),
+            client_name,
+            (d.get("phone") or "").strip(),
+            (d.get("address") or "").strip(),
+            machine_type,
+            machine_serial,
+            (d.get("applicator_serial") or "").strip(),
+            (d.get("description") or "").strip(),
+            assigned_to,
+        ),
+    )
 
+    con.commit()
+    con.close()
+    return jsonify({"status": "ok"})
 
 @app.route("/api/service_jobs", methods=["GET"])
    def api_service_jobs_list():
