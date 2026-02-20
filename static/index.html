@@ -341,9 +341,33 @@
     <div class="cardHead">
       <h2>Сервизни дейности</h2>
     </div>
-    <div class="cardBody">
-      <p>Тест – сервизният таб работи.</p>
-    </div>
+    <div class="toolbar">
+  <select id="svcFilter" style="min-width:200px">
+    <option value="">Всички</option>
+    <option value="waiting_team">Чака екип</option>
+    <option value="in_progress">В работа</option>
+    <option value="waiting_parts">Чака части</option>
+    <option value="done">Приключена</option>
+  </select>
+  <span class="pill" id="svcCount">0</span>
+</div>
+
+<div class="tableWrap">
+  <table id="svcTable" style="min-width:1000px">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Клиент</th>
+        <th>Адрес</th>
+        <th>Машина</th>
+        <th>Описание</th>
+        <th>Статус</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+ </div>
   </section>
 </section>
 
@@ -739,6 +763,7 @@
       for(const t of ids){
         const el = document.getElementById("tab_"+t);
         if(el) el.style.display = (t===tab) ? "" : "none";
+        if(tab === "svc") renderSvc();
       }
       document.querySelectorAll("button[data-tab]").forEach(b=>{
         b.classList.toggle("primary", b.dataset.tab === tab);
@@ -2075,6 +2100,56 @@ function saveState(){
     $("qConsHist").addEventListener("input", renderConsHistory);
     $("qMyInv").addEventListener("input", renderMyInv);
     $("qAdminInv").addEventListener("input", renderAdminInv);
+
+    async function loadServiceJobs(){
+  const r = await fetch("/api/service_jobs", {credentials:"same-origin"});
+  if(!r.ok) return [];
+  return await r.json();
+}
+
+function svcStatusLabel(s){
+  if(s==="waiting_team") return "Чака екип";
+  if(s==="in_progress") return "В работа";
+  if(s==="waiting_parts") return "Чака части";
+  if(s==="done") return "Приключена";
+  return s;
+}
+
+async function renderSvc(){
+  const data = await loadServiceJobs();
+  const filter = document.getElementById("svcFilter")?.value || "";
+  const rows = filter ? data.filter(x=>x.status===filter) : data;
+
+  document.getElementById("svcCount").textContent = rows.length;
+
+  const tb = document.querySelector("#svcTable tbody");
+  tb.innerHTML = rows.map(j=>`
+    <tr>
+      <td>${j.created_at || ""}</td>
+      <td>${j.client_name || ""}</td>
+      <td>${j.address || ""}</td>
+      <td>${j.machine_type || ""} ${j.machine_serial || ""}</td>
+      <td>${j.description || ""}</td>
+      <td>${svcStatusLabel(j.status)}</td>
+      <td>
+        <button class="btn" onclick="changeStatus(${j.id},'in_progress')">В работа</button>
+        <button class="btn" onclick="changeStatus(${j.id},'done')">Приключи</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function changeStatus(id,status){
+  await fetch(`/api/service_jobs/${id}/status`,{
+    method:"POST",
+    credentials:"same-origin",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({status})
+  });
+  renderSvc();
+}
+
+document.getElementById("svcFilter")?.addEventListener("change", renderSvc);
     
 <script>
 // ---------------- Auth (login/logout) ----------------
