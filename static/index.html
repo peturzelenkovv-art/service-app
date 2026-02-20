@@ -2218,23 +2218,6 @@ window.addEventListener("DOMContentLoaded", ()=>{
   setTab("demo");
 })();
 </script>
-
-  // ---------------- Start (bind events AFTER DOM is ready) ----------------
-  window.addEventListener("DOMContentLoaded", async () => {
-    document.getElementById("btnDoLogin")?.addEventListener("click", doLogin);
-    document.getElementById("loginPass")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
-
-    document.getElementById("btnLogout")?.addEventListener("click", doLogout);
-
-    // initial load
-    const ok = await applyLoginContext();
-    if(!ok){
-      showLogin(true);
-      return;
-    }
-    refresh();
-    setTab("demo");
-  });
-  </script>
+ </script>
 </body>
 </html>
